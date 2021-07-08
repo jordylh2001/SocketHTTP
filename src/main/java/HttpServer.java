@@ -4,19 +4,20 @@ import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 
-public class HttpServer {
+public class HttpServer implements Runnable{
+
+    protected boolean isStoped=false;
+    protected static ServerSocket server=null;
 
     /**
      * WebServer constructor.
      */
     protected void start() {
         ServerSocket s;
-        int port=8081;
-        System.out.println("Webserver starting up on port 80");
+        int port=8084;
+        System.out.println("Webserver starting up on port: "+port);
         System.out.println("(press ctrl-c to exit)");
         try {
             s = new ServerSocket(port);
@@ -52,6 +53,7 @@ public class HttpServer {
                         cont = split_str.length;
                         System.err.println(split_str[1]);
                         if (cont == 3) {
+                            //Index
                             if (split_str[1].equals("/")) {
                                 // Send the response
                                 // Send the headers
@@ -101,8 +103,19 @@ public class HttpServer {
                                     if(file2.exists()){
                                         String[] lista=file2.list();
                                         Arrays.sort(lista);
+                                        String enlace;
+                                        // Send the response
+                                        // Send the headers
+                                        out.println("HTTP/1.0 200 OK");
+                                        out.println("Content-Type: text/html");
+                                        out.println("Server: Bot");
+                                        out.println("");
                                         for(int i=0;i<lista.length;i++){
-                                            out.println(lista[i]);
+                                            if(lista[i].contains(".")){
+                                                out.println("<h3><a href=\""+lista[1]+"\">"+lista[i]+"</a></h3>");
+                                            }else{
+                                                out.println("<h3><a href=\""+split_str[1]+"/"+lista[i]+"/"+"\">"+lista[i]+"</a></h3>");
+                                            }
                                         }
                                     }
                                 }
@@ -136,7 +149,28 @@ public class HttpServer {
      *            Command line parameters are not used.
      */
     public static void main(String args[]) throws MalformedURLException {
-        HttpServer ws = new HttpServer();
-        ws.start();
+        int port=8082;
+        try{
+            server=new ServerSocket(port);
+            System.err.println("Server is running on port: "+port);
+            Thread t1=new Thread(new HttpServer());
+            t1.start();
+        }catch(IOException e){
+            System.out.println("No se pudo abrir en el puerto: "+port);
+        }
+    }
+
+    @Override
+    public void run() {
+        while(!isStoped){
+            try {
+                Socket client=server.accept();
+                System.out.println(client.getRemoteSocketAddress()+"has connected");
+                new Thread(new Worker(client)).start();
+            } catch (IOException e) {
+                System.out.println(e);
+            }
+
+        }
     }
 }
